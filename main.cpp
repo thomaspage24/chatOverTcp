@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 
+// the plumbing is complete
 int main(int argc, char* argv[]) {
     if (argc < 3) {
         std::cerr << "usage:\n"
