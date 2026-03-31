@@ -1,0 +1,13 @@
+# Build output
+output/
+
+# Object files and dependency files
+src/*.o
+src/*.d
+
+# Editor/IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
