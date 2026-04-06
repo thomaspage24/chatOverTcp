@@ -80,7 +80,7 @@ Example on localhost:
 
 ## TODO
 
-- [] Test over a real network — two machines on the same WiFi, then over the internet
+- [ ] Test over a real network — two machines on the same WiFi, then over the internet
 - [ ] Support multiple clients (currently 1-to-1 only)
 - [ ] Message timestamps
 - [ ] Usernames / display names
