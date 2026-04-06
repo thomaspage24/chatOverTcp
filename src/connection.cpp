@@ -1,91 +1,115 @@
 #include "connection.h"
+#include "crypto.h"
+#include "dh.h"
 #include <iostream>
 #include <unistd.h>    // read(), write(), close()
 #include <arpa/inet.h> // htonl(), ntohl()
 
-// sometimes the OS doesnt send/receive everything in one go
-// so we just keep looping until all the bytes are done
-
-// fd is socket
-static bool write_all(int fd, const void* buf, size_t len) {
-    const char* ptr = static_cast<const char*>(buf);
-    size_t remaining_bytes = len;
-
-    while (remaining_bytes> 0) {
-        ssize_t n = write(fd, ptr, remaining_bytes);
-        if (n <= 0) {
-            return false;
-         }                   // connection died
-        ptr += n;
-        remaining_bytes -= n;
-    }
-    return true;
-}
-
-static bool read_all(int fd, void* buf, size_t len) {
-    // instead we write into the buffer -> not a const ptr must be mutable
-    char* ptr = static_cast<char*>(buf);
-    size_t remaining_bytes = len;
-
-    while (remaining_bytes > 0) {
-        ssize_t n = read(fd, ptr, remaining_bytes);
-        if (n <= 0) return false; // connection died
-        ptr += n;
-        remaining_bytes -= n;
-    }
-    return true;
-}
-
-/*
-    Send and receive with length prefix
+/** 
+*   Writes exactly total_bytes bytes to a file descriptor (socket)
+*   The OS might not accept all bytes in one write() call, so we
+*   loop until everything is sent or the connection dies
+*   @param socket_fd   the file descriptor, (the socket to write to)
+*   @param data  pointer to the data we want to send
+*   @param total_bytes  how many bytes to send
+*   @return     true if all bytes were written, false if dead
 */
-bool Connection::send_message(const std::string& msg) {
+static bool write_all(int socket_fd, const void* data, size_t total_bytes) {
+    const char* data_ptr = static_cast<const char*>(data);
+    size_t bytes_remaining = total_bytes;
+
+    while (bytes_remaining> 0) {
+        ssize_t bytes_written = write(socket_fd, data_ptr, bytes_remaining);
+        if (bytes_written <= 0) {
+            return false;   // connetion died or error
+         }                   
+        data_ptr += bytes_written;
+        bytes_remaining -= bytes_written;
+    }
+    return true;
+}
+/**
+ * Reads exactly total_bytes from a socket into a buffer.
+ * The os might not read all bytes in one read() call, so we
+ * loop over until everything is read or the connection dies
+ * @param socket_fd     the socket we read from
+ * @param data          pointer to the data we want to read
+ * @param total_bytes   how many bytes we need to read
+ * @return              true if all bytes were read, false if connection dies
+ */
+static bool read_all(int socket_fd, void* data, size_t total_bytes) {
+    // cast to char* so we can do pointer arithmetic (move through byte by byte)
+    // cant be const since we write into it
+    char* data_ptr = static_cast<char*>(data);
+    size_t bytes_remaining = total_bytes;
+
+    while (bytes_remaining > 0) {
+        ssize_t bytes_read = read(socket_fd, data_ptr, bytes_remaining);
+        if (bytes_read <= 0) return false; // connection died
+        data_ptr += bytes_read;
+        bytes_remaining -= bytes_read;
+    }
+    return true;
+}
+/**
+ * Sends length-prefixed message over the socket
+ * @param incoming_msg   The message to send
+ * @return      True if message was sent succesfully, false if the connection died
+ */
+bool Connection::send_msg(const std::string& incoming_msg) {
+    std::vector<uint8_t> encrypted = encrypt(incoming_msg, session_key_);
+
     // htonl = "host to network long"
     // converts the number to big-endian so both machines agree on byte order
-    uint32_t net_len = htonl(static_cast<uint32_t>(msg.size()));
+    uint32_t net_total_bytes = htonl(static_cast<uint32_t>(encrypted.size()));
 
-    if (!write_all(sockfd_, &net_len, sizeof(net_len))) {
+    if (!write_all(sockfd_, &net_total_bytes, sizeof(net_total_bytes))) {
         return false;
-    } 
-    if (!write_all(sockfd_, msg.data(), msg.size())) {
+    }
+    if (!write_all(sockfd_, encrypted.data(), encrypted.size())) {
         return false;
     }
 
     return true;
 }
-
+/**
+ * Receives a complete message from the socket
+ * @return the decrypted message, or empty if connection died
+ */
 std::string Connection::receive_msg() {
-    uint32_t net_len = 0;
-    if (!read_all(sockfd_, &net_len, sizeof(net_len))){
+    uint32_t net_total_bytes = 0;
+    if (!read_all(sockfd_, &net_total_bytes, sizeof(net_total_bytes))){
         return "";
     } 
 
     // ntohl = "network to host long" — reverse of htonl
-    uint32_t msg_len = ntohl(net_len);
+    uint32_t msg_total_bytes = ntohl(net_total_bytes);
 
     // sanity check — if someone sends us a 4GB message something is wrong
-    if (msg_len == 0 || msg_len > 10 * 1024 * 1024) {
+    if (msg_total_bytes == 0 || msg_total_bytes > 10 * 1024 * 1024) {
         return "";
     }
 
-    std::string msg(msg_len, '\0');
-    if (!read_all(sockfd_, msg.data(), msg_len)) {
+    std::vector<uint8_t> encrypted(msg_total_bytes);
+    if (!read_all(sockfd_, encrypted.data(), msg_total_bytes)) {
         return "";
     }
 
-    return msg;
+    return decrypt(encrypted, session_key_);
 }
-/*
-    The threads
-*/
+/**
+ * Reads from stdin in a loop, sending each user_input_line
+ * Exits if the user types "qyit", stdin closes or the connection dies
+ * 
+ */
 void Connection::send_loop() {
-    std::string line;
-    while (!done_ && std::getline(std::cin, line)) {
-        if (line == "quit") {
+    std::string user_input_line;
+    while (!done_ && std::getline(std::cin, user_input_line)) {
+        if (user_input_line == "quit") {
             done_ = true;
             break;
         }
-        if (!send_message(line)) {
+        if (!send_msg(user_input_line)) {
             std::cerr << "\n[!] send failed\n";
             done_ = true;
             break;
@@ -93,45 +117,60 @@ void Connection::send_loop() {
     }
     done_ = true;
 }
-
+/**
+ * Listens on the socket in a loop, printing each received message to stdout
+ * Exits if connection dies or done_ is set by the other thread
+ * 
+ */
 void Connection::receive_loop() {
     while (!done_) {
-        std::string msg = receive_msg();
-        if (msg.empty()) {
+        std::string incoming_msg = receive_msg();
+        if (incoming_msg.empty()) {
             if (!done_) std::cout << "\n[*] other person disconnected\n";
             done_ = true;
             break;
         }
-        // \r goes back to start of line so it overwrites the "> " prompt
-        std::cout << "\r[them] " << msg << "\n> " << std::flush;
+        // \r goes back to start of user_input_line so it overwrites the "> " prompt
+        std::cout << "\r[them] " << incoming_msg << "\n> " << std::flush;
     }
 }
-
-Connection::Connection(int sockfd) : sockfd_(sockfd) {}
-
+/**
+ * Takes ownership of a connected socket
+ * closed when objecte is destroyed
+ */
+Connection::Connection(int sockfd, bool is_server) : sockfd_(sockfd), is_server_(is_server) {}
+/**
+ * Closes socket if not closed already
+ */
 Connection::~Connection() {
     if (sockfd_ >= 0) close(sockfd_);
 }
 
-/*
-    Where it all runs (lol!)
-*/
+/**
+ * Where it all runs (lol!)
+ * Starts chat session.
+ * Launches receive_loop on a background thread then runs send_loop on *THIS* thread.
+ * Blocks until user quits or the connection dies
+ */
 void Connection::run() {
+    dh_handshake(sockfd_, is_server_, session_key_);
     std::cout << "[*] connected! type messages, 'quit' to exit\n> " << std::flush;
 
-    // spin up receiv on another thread, this thread does send
+    // Receive loop runs on its own thread - it blocks waiting for incoming messages
+    // this thread runs send_loop blocking on std::getline
     std::thread receive_thread(&Connection::receive_loop, this);
 
     send_loop(); // blocks here until done
 
-    // closing the socket makes the receiv thread unblock and exit
+    // closing the socket closing the socket unblocks the read call
+    // causing receive loop to see empty and message
     if (sockfd_ >= 0) {
         close(sockfd_);
         sockfd_ = -1;
     }
 
     // wait for recv thread to actually finish before we return
-    // not doing this would be a bug — thread could access deleted memory
+    // skipping this would be a bug — thread could access deleted/freed memory
     if (receive_thread.joinable())  receive_thread.join();
 
     std::cout << "\n[*] bye\n";

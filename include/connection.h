@@ -2,20 +2,22 @@
 #include <string>
 #include <thread>
 #include <atomic>
+#include "crypto.h"
 
 class Connection {
 public:
-    Connection(int sockfd);
+    Connection(int sockfd, bool is_server);
     ~Connection();
 
     void run(); // starts the chat
 
-    // these are public because we'll need them later for the key exchange
-    bool send_message(const std::string& msg);
+    bool send_msg(const std::string& msg);
     std::string receive_msg();
 
 private:
     int sockfd_; // the socket file descriptor the OS gave us
+    bool is_server_;
+    uint8_t session_key_[AES_KEY_SIZE];
 
     // atomic means its safe to read/write from two threads
     // without them stepping on each other

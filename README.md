@@ -39,3 +39,6 @@ make
 ./output/main server <port>
 ./output/main client <host> <port>
 ```
+
+## OpenSSL
+[openssl in cpp tutorial](https://cppscripts.com/openssl-in-cpp)

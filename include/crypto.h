@@ -1,0 +1,30 @@
+#pragma once
+#include <string>
+#include <vector>
+#include <cstdint>
+
+// AES-256 needs 32 byte key
+// AES block size is always 16 bytes
+const int AES_KEY_SIZE = 32;
+const int AES_IV_SIZE = 16;
+
+/**
+ * Encrypts a plaintext string using AES-256-CBC
+ * 
+ * Generates random IV for every call, 
+ * encrypting same msg twice gives different ciphertext
+ * 
+ * @param plaintext the message to encrypt
+ * @param key       32 byte aes key
+ * @return          [16 byte IV | ciphertext] as raw bytes
+ */
+std::vector<uint8_t> encrypt(const std::string& plaintext, const uint8_t key[AES_KEY_SIZE]);
+
+/**
+ * Decrypts a message encrpyted with encrypt()
+ * 
+ * @param iv_and_ciphertext raw bytes returned by encrypt
+ * @param key               the 32 byte key used to encrypt
+ * @return                  the original plaintext string
+ */
+std::string decrypt(const std::vector<uint8_t>& iv_and_ciphertext, const uint8_t key[AES_KEY_SIZE]);
