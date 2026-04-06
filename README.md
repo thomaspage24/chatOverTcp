@@ -1,6 +1,6 @@
 # secure_chat
 
-Encrypted peer-to-peer chat over TCP using AES and Diffie-Hellman key exchange.
+Encrypted peer-to-peer chat over TCP using AES and Elliptic Curve Diffie-Hellman key exchange.
 
 ## Architecture
 
@@ -15,23 +15,6 @@ Encrypted peer-to-peer chat over TCP using AES and Diffie-Hellman key exchange.
       |                                  |
   DH key exchange ——— shared secret ———  |
 ```
-
-## Structure
-
-```
-secure_chat/
-├── Makefile
-├── include/
-│   ├── server.h
-│   ├── client.h
-│   └── connection.h
-└── src/
-    ├── main.cpp         ← entry point, parses "server" / "client" mode
-    ├── server.cpp       ← bind, listen, accept
-    ├── client.cpp       ← resolve hostname, connect
-    └── connection.cpp   ← send/recv logic, threading
-```
-
 ## Usage
 
 ```bash
@@ -41,4 +24,8 @@ make
 ```
 
 ## OpenSSL
-[openssl in cpp tutorial](https://cppscripts.com/openssl-in-cpp)
+[openssl in cpp documentation](https://cppscripts.com/openssl-in-cpp)
+# TODO
+
+Make containers? Docker
+test over wifi and 2 different machines, rather than talking to myself machine 
