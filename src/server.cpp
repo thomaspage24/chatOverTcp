@@ -16,7 +16,7 @@
  * 
  * @param port  the port number to listen on
  */
-void run_server(int port) {
+void RunServer(int port) {
     // AF_INET = IPv4, SOCK_STREAM = TCP
     int listening_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (listening_socket < 0)
@@ -59,5 +59,5 @@ void run_server(int port) {
     close(listening_socket); // dont need this anymore
 
     Connection conn(client_socket, true);
-    conn.run();
+    conn.Run();
 }

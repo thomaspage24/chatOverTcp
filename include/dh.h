@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#include "crypto.h" // for AES_KEY_SIZE
+#include "crypto.h" // for kAesKeySize
 
 /**
  * Performs a Diffie-Hellman key exchange over the socket.
@@ -13,7 +13,7 @@
  * @param is_server   true if this side is the server, false if client
  * @param out_key     buffer to write the 32 byte shared key into
  */
-void dh_handshake(int socket_fd, bool is_server, uint8_t out_key[AES_KEY_SIZE]);
+void DhHandshake(int socket_fd, bool is_server, uint8_t out_key[kAesKeySize]);
 
 // ## step 2 — dh.cpp
 

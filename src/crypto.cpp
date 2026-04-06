@@ -3,12 +3,12 @@
 #include <openssl/evp.h>   // EVP = envelope 
 #include <openssl/rand.h>  // RAND_bytes, cryptographically secure random byteswh
 
-std::vector<uint8_t> encrypt(const std::string& plaintext, const uint8_t key[AES_KEY_SIZE]) {
+std::vector<uint8_t> Encrypt(const std::string& plaintext, const uint8_t key[kAesKeySize]) {
 
     // --- generate a random IV (initialisation vector) ---
     // fresh IV every message — same plaintext encrypted twice = different ciphertext
-    uint8_t iv[AES_IV_SIZE];
-    if (RAND_bytes(iv, AES_IV_SIZE) != 1)
+    uint8_t iv[kAesIvSize];
+    if (RAND_bytes(iv, kAesIvSize) != 1)
         throw std::runtime_error("failed to generate random IV");
 
     // ---create an openssl context ---
@@ -29,7 +29,7 @@ std::vector<uint8_t> encrypt(const std::string& plaintext, const uint8_t key[AES
     // --- encrypt the plaintext ---
     // ciphertext can be slightly larger than plaintext because of padding
     // worst case: plaintext + one full extra block (16 bytes)
-    std::vector<uint8_t> ciphertext(plaintext.size() + AES_IV_SIZE);
+    std::vector<uint8_t> ciphertext(plaintext.size() + kAesIvSize);
     int chunk_size = 0;
 
     // EVP_EncryptUpdate does the actual encryption
@@ -63,24 +63,24 @@ std::vector<uint8_t> encrypt(const std::string& plaintext, const uint8_t key[AES
     // receiver needs the IV to decrypt
     // final layout: [ 16 byte IV | ciphertext ]
     std::vector<uint8_t> iv_and_ciphertext;
-    iv_and_ciphertext.insert(iv_and_ciphertext.end(), iv, iv + AES_IV_SIZE);
+    iv_and_ciphertext.insert(iv_and_ciphertext.end(), iv, iv + kAesIvSize);
     iv_and_ciphertext.insert(iv_and_ciphertext.end(),
                              ciphertext.begin(), ciphertext.end());
 
     return iv_and_ciphertext;
 }
 
-std::string decrypt(const std::vector<uint8_t>& iv_and_ciphertext,
-                    const uint8_t key[AES_KEY_SIZE]) {
+std::string Decrypt(const std::vector<uint8_t>& iv_and_ciphertext,
+                    const uint8_t key[kAesKeySize]) {
 
     // make sure there are enough bytes to even contain an IV
-    if (iv_and_ciphertext.size() <= static_cast<size_t>(AES_IV_SIZE))
+    if (iv_and_ciphertext.size() <= static_cast<size_t>(kAesIvSize))
         throw std::runtime_error("ciphertext too short to contain an IV");
 
     // --- step 1: peel off the IV from the front ---
     const uint8_t* iv         = iv_and_ciphertext.data();
-    const uint8_t* ciphertext = iv_and_ciphertext.data() + AES_IV_SIZE;
-    int ciphertext_len = static_cast<int>(iv_and_ciphertext.size() - AES_IV_SIZE);
+    const uint8_t* ciphertext = iv_and_ciphertext.data() + kAesIvSize;
+    int ciphertext_len = static_cast<int>(iv_and_ciphertext.size() - kAesIvSize);
 
     // --- step 2: create context and set up for decryption ---
     EVP_CIPHER_CTX* cipher_ctx = EVP_CIPHER_CTX_new();

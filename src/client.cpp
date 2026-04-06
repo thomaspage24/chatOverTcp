@@ -16,7 +16,7 @@
  * @param host hostname or ip addr
  * @param port port number to connect to
  */
-void run_client(const std::string& host, int port) {
+void RunClient(const std::string& host, int port) {
     // getaddrinfo handles both "localhost" and "192.168.1.x" style addresses
     // returns linked list of address_infos -> we use first 
     addrinfo hints{};                   // struct from C networking lib, zero intiailise
@@ -51,5 +51,5 @@ void run_client(const std::string& host, int port) {
     std::cout << "[*] connected!\n";
 
     Connection conn(client_socket, false);
-    conn.run();
+    conn.Run();
 }

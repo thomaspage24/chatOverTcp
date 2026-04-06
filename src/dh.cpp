@@ -26,7 +26,7 @@
  * @param num_bytes how many
  * @return          true if all bytes sent, false if connection died
  */
-static bool raw_send(int socket_fd, const uint8_t* data, size_t num_bytes) {
+static bool RawSend(int socket_fd, const uint8_t* data, size_t num_bytes) {
     uint32_t network_byte_length = htonl(static_cast<uint32_t>(num_bytes));
     if (write(socket_fd, &network_byte_length, sizeof(network_byte_length))
             != sizeof(network_byte_length))
@@ -49,7 +49,7 @@ static bool raw_send(int socket_fd, const uint8_t* data, size_t num_bytes) {
  * @param socket_fd socket to read from
  * @return          received bytes
  */
-static std::vector<uint8_t> raw_recv(int socket_fd) {
+static std::vector<uint8_t> RawRecv(int socket_fd) {
     uint32_t network_byte_length = 0;
     if (read(socket_fd, &network_byte_length, sizeof(network_byte_length))
             != sizeof(network_byte_length))
@@ -95,7 +95,7 @@ static std::vector<uint8_t> raw_recv(int socket_fd) {
  * @param is_server true if this side is the server
  * @param out_key   buffer to write the 32 byte AES key into
  */
-void dh_handshake(int socket_fd, bool is_server, uint8_t out_key[AES_KEY_SIZE]) {
+void DhHandshake(int socket_fd, bool is_server, uint8_t out_key[kAesKeySize]) {
 
     // --- step 1: generate our X25519 key pair ---
     // EVP_PKEY_X25519 tells OpenSSL which curve to use
@@ -130,14 +130,14 @@ void dh_handshake(int socket_fd, bool is_server, uint8_t out_key[AES_KEY_SIZE]) 
     std::vector<uint8_t> their_public_bytes;
 
     if (is_server) {
-        if (!raw_send(socket_fd, our_public_bytes.data(), our_public_bytes.size())) {
+        if (!RawSend(socket_fd, our_public_bytes.data(), our_public_bytes.size())) {
             EVP_PKEY_free(our_key);
             throw std::runtime_error("failed to send public key");
         }
-        their_public_bytes = raw_recv(socket_fd);
+        their_public_bytes = RawRecv(socket_fd);
     } else {
-        their_public_bytes = raw_recv(socket_fd);
-        if (!raw_send(socket_fd, our_public_bytes.data(), our_public_bytes.size())) {
+        their_public_bytes = RawRecv(socket_fd);
+        if (!RawSend(socket_fd, our_public_bytes.data(), our_public_bytes.size())) {
             EVP_PKEY_free(our_key);
             throw std::runtime_error("failed to send public key");
         }

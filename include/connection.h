@@ -9,20 +9,20 @@ public:
     Connection(int sockfd, bool is_server);
     ~Connection();
 
-    void run(); // starts the chat
+    void Run(); // starts the chat
 
-    bool send_msg(const std::string& msg);
-    std::string receive_msg();
+    bool SendMsg(const std::string& msg);
+    std::string ReceiveMsg();
 
 private:
     int sockfd_; // the socket file descriptor the OS gave us
     bool is_server_;
-    uint8_t session_key_[AES_KEY_SIZE];
+    uint8_t session_key_[kAesKeySize];
 
     // atomic means its safe to read/write from two threads
     // without them stepping on each other
     std::atomic<bool> done_{false};
 
-    void send_loop(); // reads your keyboard, sends over socket
-    void receive_loop(); // reads from socket, prints to screen
+    void SendLoop(); // reads your keyboard, sends over socket
+    void ReceiveLoop(); // reads from socket, prints to screen
 };

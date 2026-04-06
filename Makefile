@@ -10,10 +10,10 @@ CXXFLAGS := -std=c++17 -Wall -Wextra -g
 # OpenSSL — uncomment the block for your machine
 #
 # macOS (homebrew):
-LFLAGS   := -L/opt/homebrew/opt/openssl@3/lib -lssl -lcrypto
+# LFLAGS := -L/opt/homebrew/opt/openssl@3/lib -lssl -lcrypto
 #
 # Arch Linux:
-# LFLAGS := -lssl -lcrypto
+LFLAGS   := -lssl -lcrypto
 # -------------------------------------------------------
 
 OUTPUT  := output
@@ -42,9 +42,6 @@ endif
 INCLUDES := $(patsubst %,-I%,$(INCLUDEDIRS:%/=%))
 LIBS     := $(patsubst %,-L%,$(LIBDIRS:%/=%))
 
-# openssl headers must come AFTER the patsubst line above
-# otherwise := would overwrite this before it gets used
-INCLUDES += -I/opt/homebrew/opt/openssl@3/include
 
 SOURCES := $(wildcard $(patsubst %,%/*.cpp,$(SOURCEDIRS)))
 OBJECTS := $(SOURCES:.cpp=.o)
