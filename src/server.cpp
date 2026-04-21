@@ -40,7 +40,6 @@ void RunServer(int port, std::string username) {
            sizeof(server_address)) < 0) {
     throw std::runtime_error("bind() failed — is the port already in use?");
   }
-  
 
   // start listening, queue up to 1 pending connection
   listen(listening_socket, 1);

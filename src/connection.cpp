@@ -160,13 +160,11 @@ void Connection::ReceiveLoop() {
       break;
     }
 
-
     // \r goes back to start of user_input_line so it overwrites the "> " prompt
     std::string display_name = is_server_ ? client_username_ : server_username_;
-    std::cout           
-              << kBold << kGreen << "\r[" << GetTimestamp() << "]" << kReset
-              << kBold << kYellow << " [" << display_name << "] " << kReset << kMagenta
-              << incoming_msg << kReset << "\n> " << std::flush;
+    std::cout << kBold << kGreen << "\r[" << GetTimestamp() << "]" << kReset
+              << kBold << kYellow << " [" << display_name << "] " << kReset
+              << kMagenta << incoming_msg << kReset << "\n> " << std::flush;
   }
 }
 
@@ -178,14 +176,13 @@ Connection::Connection(int sockfd, bool is_server, std::string username)
     : sockfd_(sockfd), is_server_(is_server) {
   if (is_server_) {
     server_username_ = username;
-        std::cout << server_username_ << " server";
-  }
-   
-  else {
-    client_username_ = username;
-        std::cout << client_username_ << " client";
+    std::cout << server_username_ << " server";
   }
 
+  else {
+    client_username_ = username;
+    std::cout << client_username_ << " client";
+  }
 }
 /**
  * Closes socket if not closed already
