@@ -1,6 +1,6 @@
 # secure_chat
 
-Terminal-based encrypted chat over TCP. Two machines connect, do a Diffie-Hellman handshake to agree on a key, then talk over AES-256-CBC. No pre-shared secrets, no plaintext.
+Terminal-based encrypted chat over TCP. Two machines connect, do a Diffie-Hellman handshake to agree on a key, then talk over AES-256-CBC.
 
 Tested on macOS and Linux.
 
@@ -29,7 +29,7 @@ sequenceDiagram
     B->>A: [ IV | AES-256-CBC ciphertext ]
 ```
 
-Each message gets a fresh random IV, so encrypting the same string twice produces different ciphertext. The shared key never travels.
+Each message gets a fresh random IV, so encrypting the same string twice produces different ciphertext.
 
 ---
 
@@ -79,6 +79,7 @@ Example on localhost:
 - [ ] Support multiple clients (currently 1-to-1 only)
 - [x] Message timestamps
 - [x] Usernames / display names
+- [X] Colourized chat output
 - [ ] Chat history saved to a local encrypted log
 - [ ] Forward secrecy, re-key periodically so a leaked key doesn't expose the whole session
 - [ ] Mutual authentication
