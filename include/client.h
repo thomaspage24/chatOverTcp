@@ -1,4 +1,4 @@
 #pragma once
 #include <string>
 
-void RunClient(const std::string& host, int port);
+void RunClient(const std::string& host, int port, std::string username);

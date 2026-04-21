@@ -20,6 +20,10 @@ sequenceDiagram
     B->>A: DH public value (g^b mod p)
     Note over A,B: both derive shared secret (g^ab mod p)<br/>hashed down to 32-byte AES key
 
+    Note over A,B: Username Exchange (encrypted)
+    A->>B: server username
+    B->>A: client username
+
     Note over A,B: Encrypted chat
     A->>B: [ IV | AES-256-CBC ciphertext ]
     B->>A: [ IV | AES-256-CBC ciphertext ]
@@ -32,7 +36,7 @@ Each message gets a fresh random IV, so encrypting the same string twice produce
 ## Dependencies
 
 - `g++` (C++17)
-- `make`
+- `cmake` (3.16+)
 - OpenSSL 3
   - macOS: `brew install openssl@3`
   - linux: `sudo pacman -S openssl`
@@ -41,22 +45,14 @@ Each message gets a fresh random IV, so encrypting the same string twice produce
 
 ## Build
 
-The Makefile has two `LFLAGS` blocks — one for macOS (Homebrew), one for Linux. Only one should be uncommented at a time.
-
-**macOS** — open `Makefile` and swap the active `LFLAGS` line:
-```makefile
-# uncomment this:
-LFLAGS := -L/opt/homebrew/opt/openssl@3/lib -lssl -lcrypto
-# comment this out:
-# LFLAGS := -lssl -lcrypto
-```
-
-Then build:
 ```bash
-make
+cmake -B build
+cmake --build build
 ```
 
-Binary lands at `output/main`.
+Binary lands at `build/output/main`.
+
+CMake's `find_package(OpenSSL)` handles the library path automatically on both macOS and Linux.
 
 ---
 
@@ -64,16 +60,16 @@ Binary lands at `output/main`.
 
 ```bash
 # machine 1 — start the server
-./output/main server <port>
+./build/output/main server <port>
 
 # machine 2 — connect
-./output/main client <host> <port>
+./build/output/main client <host> <port>
 ```
 
 Example on localhost:
 ```bash
-./output/main server 9000
-./output/main client 127.0.0.1 9000
+./build/output/main server 9000
+./build/output/main client 127.0.0.1 9000
 ```
 
 ---
@@ -81,8 +77,8 @@ Example on localhost:
 ## TODO
 
 - [ ] Support multiple clients (currently 1-to-1 only)
-- [ ] Message timestamps
-- [ ] Usernames / display names
+- [x] Message timestamps
+- [x] Usernames / display names
 - [ ] Chat history saved to a local encrypted log
 - [ ] Forward secrecy, re-key periodically so a leaked key doesn't expose the whole session
 - [ ] Mutual authentication

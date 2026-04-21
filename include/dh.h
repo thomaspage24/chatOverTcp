@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
-#include "crypto.h" // for kAesKeySize
+
+#include "crypto.h"  // for kAesKeySize
 
 /**
  * Performs a Diffie-Hellman key exchange over the socket.

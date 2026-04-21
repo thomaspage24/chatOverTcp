@@ -1,3 +1,4 @@
 #pragma once
 
-void RunServer(int port);
+#include <string>
+void RunServer(int port, std::string username);
