@@ -1,3 +1,0 @@
-/home/loaf/Desktop/secure_chat/secure_chat/build/CMakeFiles/main.dir
-/home/loaf/Desktop/secure_chat/secure_chat/build/CMakeFiles/edit_cache.dir
-/home/loaf/Desktop/secure_chat/secure_chat/build/CMakeFiles/rebuild_cache.dir
