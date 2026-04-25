@@ -6,6 +6,7 @@
 #include <unistd.h>  // read(), write(), close()
 
 #include <iostream>
+#include <string>
 
 #include "crypto.h"
 #include "dh.h"
@@ -126,7 +127,7 @@ void Connection::SendLoop() {
 /**
  * @brief Get the local timestamp of the connection
  *
- * @return std::string of day/date/timeavrai
+ * @return std::string of day/date/time
  */
 std::string GetTimestamp() {
   time_t raw_time;
@@ -136,7 +137,7 @@ std::string GetTimestamp() {
 
   char buffer[10];
   strftime(buffer, sizeof(buffer), "%H:%M:%S", time_info);
-  return std::string(buffer);
+  return {buffer};
 }
 /**
  * Listens on the socket in a loop, printing each received message to stdout
