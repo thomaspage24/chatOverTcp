@@ -1,13 +1,17 @@
-# Build output
-output/
+## build artifacts
+build/
 
-# Object files and dependency files
-src/*.o
-src/*.d
+# cmake cache files that might end up in root
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
 
-# Editor/IDE
+# compiled object files
+*.o
+*.d
+
+.DS_Store Build output
+
 .vscode/
 
-# OS
-.DS_Store
 Thumbs.db
