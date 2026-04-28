@@ -11,7 +11,7 @@ cmake_install.cmake
 *.d
 
 .DS_Store Build output
-
+chat_history/*
 .vscode/
 
 Thumbs.db

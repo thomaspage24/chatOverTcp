@@ -5,6 +5,7 @@
 #include <time.h>
 #include <unistd.h>  // read(), write(), close()
 
+#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -36,7 +37,7 @@ static bool WriteAll(int socket_fd, const void* data, size_t total_bytes) {
 }
 /**
  * Reads exactly total_bytes from a socket into a buffer.
- * The os might not read all bytes in one read() call, so we
+ * The OS might not read all bytes in one read() call, so we
  * loop over until everything is read or the connection dies
  * @param socket_fd     the socket we read from
  * @param data          pointer to the data we want to read
@@ -59,8 +60,8 @@ static bool ReadAll(int socket_fd, void* data, size_t total_bytes) {
 }
 /**
  * Sends length-prefixed message over the socket
- * @param incoming_msg   The message to send
- * @return      True if message was sent succesfully, false if the connection
+ * @param incoming_msg   the message to send
+ * @return      true if message was sent succesfully, false if the connection
  * died
  */
 bool Connection::SendMsg(const std::string& incoming_msg) {
@@ -106,7 +107,7 @@ std::string Connection::ReceiveMsg() {
 }
 /**
  * Reads from stdin in a loop, sending each user_input_line
- * Exits if the user types "qyit", stdin closes or the connection dies
+ * Exits if the user types "quit", stdin closes or the connection dies
  *
  */
 void Connection::SendLoop() {
@@ -139,6 +140,16 @@ std::string GetTimestamp() {
   strftime(buffer, sizeof(buffer), "%H:%M:%S", time_info);
   return {buffer};
 }
+std::string GetCurrDate() {
+  time_t raw_time;
+  struct tm* time_info;
+  time(&raw_time);
+  time_info = localtime(&raw_time);
+
+  char buffer[20];
+  strftime(buffer, sizeof(buffer), "%Y_%m_%d", time_info);
+  return {buffer};
+}
 /**
  * Listens on the socket in a loop, printing each received message to stdout
  * Exits if connection dies or done_ is set by the other thread
@@ -153,6 +164,8 @@ void Connection::ReceiveLoop() {
   const std::string kMagenta = "\033[35m";
   const std::string kCyan = "\033[36m";
   const std::string kBold = "\033[1m";
+  std::ofstream chat_history(session_file_);
+
   while (!done_) {
     std::string incoming_msg = ReceiveMsg();
     if (incoming_msg.empty()) {
@@ -161,12 +174,20 @@ void Connection::ReceiveLoop() {
       break;
     }
 
-    // \r goes back to start of user_input_line so it overwrites the "> " prompt
+    // \r goes back to start of user_input_line so it overwrites the "> "
+    // prompt
     std::string display_name = is_server_ ? client_username_ : server_username_;
     std::cout << kBold << kGreen << "\r[" << GetTimestamp() << "]" << kReset
               << kBold << kYellow << " [" << display_name << "] " << kReset
               << kMagenta << incoming_msg << kReset << "\n> " << std::flush;
+
+    if (chat_history.is_open()) {
+      chat_history << kBold << kGreen << "\r[" << GetTimestamp() << "]"
+                   << kReset << kBold << kYellow << " [" << display_name << "] "
+                   << kReset << kMagenta << incoming_msg << kReset << "\n> ";
+    }
   }
+  chat_history.close();
 }
 
 /**
@@ -195,7 +216,7 @@ Connection::~Connection() {
 /**
  * Where it all runs (lol!)
  * Starts chat session.
- * Launches receive_loop on a background thread then runs send_loop on *THIS*
+ * Launches receive_loop on a background thread then runs send_loop on *this*
  * thread. Blocks until user quits or the connection dies
  */
 void Connection::Run() {
@@ -206,9 +227,23 @@ void Connection::Run() {
   if (is_server_) {
     SendMsg(my_username);
     client_username_ = ReceiveMsg();
+    std::filesystem::create_directories("chat_history");
+    int session = 1;
+    while (true) {
+      session_file_ = "chat_history/" + GetCurrDate() + "_chats_" +
+                      std::to_string(session) + ".txt";
+      if (!std::ifstream(session_file_)) {
+        break;  // this slot is free, use it
+      }
+      session++;
+    }
+    SendMsg(std::to_string(session));
   } else {
     server_username_ = ReceiveMsg();
     SendMsg(my_username);
+    int session = std::stoi(ReceiveMsg());
+    session_file_ = "chat_history/" + GetCurrDate() + "_chats_" +
+                    std::to_string(session) + ".txt";
   }
 
   const std::string kRed = "\033[31m";

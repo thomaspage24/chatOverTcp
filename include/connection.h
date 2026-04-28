@@ -21,7 +21,7 @@ class Connection {
   uint8_t session_key_[kAesKeySize];
   std::string server_username_;
   std::string client_username_;
-
+  std::string session_file_;
   // atomic means its safe to read/write from two threads
   // without them stepping on each other
   std::atomic<bool> done_{false};
